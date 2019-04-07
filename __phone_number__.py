@@ -70,7 +70,7 @@ class SpiderNumber(object):
                 # 保存州id
                 self.state_id.append(id)
                 # 保存到数据库中
-                self.save_state_database(id, state_a[0].string)
+                # self.save_state_database(id, state_a[0].string)
                 # 获取区号
                 area = BeautifulSoup(str(tds[1]))
                 area_a = area.find_all('a')
@@ -117,7 +117,7 @@ class SpiderNumber(object):
             phone_number_info.primary_city = str(city.text).strip()
             # Carrier
             carr = item_bf.find('div', class_='col-xs-12 prefix-col4')
-            phone_number_info.carrier = str(carr.text).strip()
+            phone_number_info.carrier = str(carr.text).strip().replace("'", "\\'")
             # Introduced 时间
             data = item_bf.find('div', class_='col-xs-12 prefix-col5')
             search_data = re.search(r'(.*)(\d{2}/\d{2}/\d{4})', str(data.text).strip(), re.M | re.I)
@@ -148,7 +148,7 @@ class SpiderNumber(object):
             db.commit()
         except:
             db.rollback()
-            print('插入数据库失败%s' % phone_number_info.prefix)
+            print('插入数据库失败%s,  sql:%s' % (phone_number_info.prefix, sql))
         db.close()
 
 
