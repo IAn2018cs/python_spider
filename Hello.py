@@ -22,6 +22,8 @@ print(ss)
 print(sss)
 print(ssss)
 '''
+import re
+
 num = 1
 string = '1'
 num2 = int(string)
@@ -49,3 +51,7 @@ num_a = '13340241324'
 num_b = '19813325874'
 
 print(serch + ' is at ' + str(num_a.find(serch) + 1 ) + ' to '+ str(num_a.find(serch) + len(serch)) + ' of num_a')
+
+
+search_num = re.search(r'(.*)(\(\d{3}\)) (\d{3})(-.*)', '    (025) 154-   ', re.M | re.I)
+print(search_num.group(3))

@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 
 class PhoneNumberInfo(object):
     def __init__(self):
-        self.state_id = 0
+        self.state = ''
         self.prefix = ''
         self.usage = ''
         self.primary_city = ''
@@ -24,6 +24,8 @@ class SpiderNumber(object):
         self.state = []
         # 存放州id
         self.state_id = []
+        # 存放州名
+        self.state_name = []
         # 存放区号
         self.area_code = []
         # 存放区号链接
@@ -57,6 +59,7 @@ class SpiderNumber(object):
         trs = table_bf.find_all('tr')
         i = 0
         id = 0
+        name = ''
         for line in trs[1:]:
             tr = BeautifulSoup(str(line))
             tds = tr.find_all('td')
@@ -65,10 +68,12 @@ class SpiderNumber(object):
                 id = i
                 state_content = BeautifulSoup(str(tds[0]))
                 state_a = state_content.find_all('a')
+                name = state_a[0].string
                 # 保存州名字
                 self.state.append(state_a[0].string)
                 # 保存州id
                 self.state_id.append(id)
+                self.state_name.append(name)
                 # 保存到数据库中
                 # self.save_state_database(id, state_a[0].string)
                 # 获取区号
@@ -83,6 +88,7 @@ class SpiderNumber(object):
             else:
                 # 保存州id
                 self.state_id.append(id)
+                self.state_name.append(name)
                 # 获取区号
                 area = BeautifulSoup(str(tds[0]))
                 area_a = area.find_all('a')
@@ -92,7 +98,7 @@ class SpiderNumber(object):
                 self.location_time.append(str(tds[1]).replace('<td>', '').replace('</td>', '').replace('<br/>', ' '))
 
     # 获取州下的号码信息
-    def get_phone_info(self, target, state_id, area_code):
+    def get_phone_info(self, target, state, area_code):
         req = requests.get(url=target, headers=self.headers)
         html = req.text
         bf = BeautifulSoup(html)
@@ -101,14 +107,14 @@ class SpiderNumber(object):
         phone_number_infos = []
         for item in group_items:
             phone_number_info = PhoneNumberInfo()
-            # 保存州id
-            phone_number_info.state_id = state_id
+            # 保存州名字
+            phone_number_info.state = state
             item_bf = BeautifulSoup(str(item))
             num = item_bf.find('div', class_='col-xs-12 prefix-col1')
             # 匹配出电话号前缀 \d 数字
-            search_num = re.search(r'(.*)(\(\d{3}\) \d{3})(-.*)', num.text, re.M | re.I)
+            search_num = re.search(r'(.*)(\(\d{3}\)) (\d{3})(-.*)', num.text, re.M | re.I)
             # 存入数据库 Prefix
-            phone_number_info.prefix = search_num.group(2)
+            phone_number_info.prefix = search_num.group(3)
             # Usage 电话类型
             type = item_bf.find('div', class_='col-xs-12 prefix-col2')
             phone_number_info.usage = str(type.text).strip()
@@ -137,12 +143,11 @@ class SpiderNumber(object):
     def save_database(self, phone_number_info):
         db = pymysql.connect('localhost', 'root', 'chenshuaide', 'phone_info')
         cursor = db.cursor()
-        sql = "INSERT INTO phone_number_area(STATE_ID, \
-               PREFIX, USEAGE, PRIMARY_CITY, CARRIER, INTRODUCED, AREA_CODE) \
-               VALUES (%s,'%s', '%s',  '%s',  '%s',  '%s','%s')" % \
-              (phone_number_info.state_id, phone_number_info.prefix, phone_number_info.usage,
-               phone_number_info.primary_city, phone_number_info.carrier, phone_number_info.introduced,
-               phone_number_info.area_code)
+        sql = "INSERT INTO phone_number(STATE, AREA_CODE, \
+               PREFIX, USEAGE, PRIMARY_CITY, CARRIER, INTRODUCED) \
+               VALUES ('%s', '%s', '%s',  '%s',  '%s',  '%s', '%s')" % \
+              (phone_number_info.state, phone_number_info.area_code, phone_number_info.prefix, phone_number_info.usage,
+               phone_number_info.primary_city, phone_number_info.carrier, phone_number_info.introduced)
         try:
             cursor.execute(sql)
             db.commit()
@@ -161,7 +166,7 @@ if __name__ == '__main__':
         print('\n爬取第%s个，共%s个；当前进度：%2f' % (i, len(sn.area_code_urls), i / len(sn.area_code_urls)))
         # 区号
         print(sn.area_code[i])
-        infos = sn.get_phone_info(sn.area_code_urls[i], sn.state_id[i], sn.area_code[i])
+        infos = sn.get_phone_info(sn.area_code_urls[i], sn.state_name[i], sn.area_code[i])
         if infos:
             for info in infos:
                 sn.save_database(info)
