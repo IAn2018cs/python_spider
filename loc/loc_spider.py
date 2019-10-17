@@ -52,16 +52,25 @@ def parse_loc_code(html):
         if len(lis) == 0:
             continue
         for li in lis:
-            subclass = re.match(r'^Subclass ([A-Z]{2,}) +– (.+)', li.text)
+            subclass = re.match(r'^Subclasse?s? ?–? ([A-Z]{2,})-?/?([A-Z]*) +–?-? (.+)', li.text)
             if subclass:
                 loc = Loc()
                 loc.loc = subclass.group(1)
-                loc.des = subclass.group(2)
+                loc.des = subclass.group(3)
                 loc.general_code = subclass.group(1)[0:1]
                 print('loc : %s' % loc.loc)
                 print('des : %s' % loc.des)
                 print('general_code : %s' % loc.general_code)
                 loc_list.append(loc)
+                if len(subclass.group(2)) > 0:
+                    loc2 = Loc()
+                    loc2.loc = subclass.group(2)
+                    loc2.des = loc.des
+                    loc2.general_code = subclass.group(2)[0:1]
+                    print('loc2 : %s' % loc2.loc)
+                    print('des2 : %s' % loc2.des)
+                    print('general_code2 : %s' % loc2.general_code)
+                    loc_list.append(loc2)
     return loc_list
 
 
@@ -98,6 +107,6 @@ def save2db(general_map, loc_list):
 
 if __name__ == "__main__":
     html = get_wiki_page()
-    general_map = parse_general_code(html)
+    # general_map = parse_general_code(html)
     loc_list = parse_loc_code(html)
-    save2db(general_map, loc_list)
+    # save2db(general_map, loc_list)
